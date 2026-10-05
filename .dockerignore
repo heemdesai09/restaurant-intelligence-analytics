@@ -1,0 +1,26 @@
+# Git & IDE
+.git
+.gitignore
+.idea
+*.iml
+.vscode
+.DS_Store
+*.log
+
+# Sensitive credentials & environment files
+.env
+.env.*
+!.env.example
+*.local
+
+# Local build artifacts
+target/
+backend/target/
+project/target/
+project/project/
+backend/project/target/
+backend/project/project/
+.bsp/
+.bloop/
+.metals/
+.scala-build/

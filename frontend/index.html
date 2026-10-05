@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restaurant Intelligence & Analytics System | Scala + MongoDB</title>
+  <meta name="description" content="College project for Advanced Big Data Analytics implementing Restaurant Intelligence with Scala and MongoDB Atlas.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Header Banner -->
+  <header class="top-header">
+    <div class="container header-content">
+      <div class="brand">
+        <h1 class="main-title">Restaurant Intelligence &amp; Analytics System</h1>
+        <p class="subtitle">Advanced Big Data Analytics (ABDA) • Scala 3 + MongoDB Atlas</p>
+      </div>
+      <div class="header-badges">
+        <div class="student-badge">
+          <span class="badge-label">Student:</span>
+          <span class="badge-val">Heem Desai</span>
+          <span class="badge-sub">Enroll: 23162121003</span>
+        </div>
+        <div id="connectionBadge" class="status-badge connecting">
+          <span class="status-dot"></span>
+          <span id="connectionText">Checking MongoDB...</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Bar -->
+  <nav class="main-nav">
+    <div class="container nav-container">
+      <button class="nav-tab active" data-target="overviewSection" id="tabOverview">Overview</button>
+      <button class="nav-tab" data-target="finderSection" id="tabFinder">Restaurant Finder</button>
+      <button class="nav-tab" data-target="addSection" id="tabAdd">Add Restaurant</button>
+      <button class="nav-tab" data-target="analyticsSection" id="tabAnalytics">Analytics</button>
+      <button class="nav-tab" data-target="databaseSection" id="tabDatabase">Database &amp; Indexes</button>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="container page-content">
+
+    <!-- Alert Banner -->
+    <div id="globalAlert" class="alert-box hidden" role="alert">
+      <span id="alertMessage"></span>
+      <button class="alert-close" onclick="hideAlert()">&times;</button>
+    </div>
+
+    <!-- ==================== SECTION 1: OVERVIEW ==================== -->
+    <section id="overviewSection" class="content-section active">
+      <div class="section-header">
+        <h2>System Overview</h2>
+        <p class="section-desc">Key metrics queried directly from MongoDB Atlas <code>sample_restaurants.restaurants</code> dataset.</p>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <span class="kpi-label">Total Restaurants</span>
+          <span class="kpi-value" id="kpiTotalRestaurants">...</span>
+          <span class="kpi-note">MongoDB Collection Count</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Unique Cuisines</span>
+          <span class="kpi-value" id="kpiCuisines">...</span>
+          <span class="kpi-note">Distinct Cuisines</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Boroughs Covered</span>
+          <span class="kpi-value" id="kpiBoroughs">...</span>
+          <span class="kpi-note">NYC Boroughs</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Average Score</span>
+          <span class="kpi-value" id="kpiAvgScore">...</span>
+          <span class="kpi-note">NYC Inspection Avg</span>
+        </div>
+      </div>
+
+      <div class="card intro-card">
+        <h3>About This Project</h3>
+        <p>This application demonstrates big data processing, indexing, and multi-stage aggregation pipelines on MongoDB's official <strong>sample_restaurants</strong> dataset using <strong>Scala 3</strong>.</p>
+        <div class="spec-grid">
+          <div class="spec-item">
+            <strong>Architecture:</strong>
+            <span>Scala 3 Backend (Repository Pattern + Service Layer) + Clean College Web UI</span>
+          </div>
+          <div class="spec-item">
+            <strong>Database:</strong>
+            <span>MongoDB Atlas (<code>sample_restaurants</code> database, <code>restaurants</code> collection)</span>
+          </div>
+          <div class="spec-item">
+            <strong>CRUD Operations:</strong>
+            <span>Add Restaurant, Multi-Filter Search, Update Record, Delete Record</span>
+          </div>
+          <div class="spec-item">
+            <strong>Indexes Demonstrated:</strong>
+            <span><code>name</code>, <code>cuisine</code>, and compound <code>borough + cuisine</code></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SECTION 2: RESTAURANT FINDER ==================== -->
+    <section id="finderSection" class="content-section">
+      <div class="section-header">
+        <h2>Restaurant Finder &amp; Filter</h2>
+        <p class="section-desc">Multi-criteria search querying MongoDB directly using BSON filters (supports combining multiple filters).</p>
+      </div>
+
+      <div class="card filter-card">
+        <form id="searchForm" onsubmit="handleSearch(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="filterName">Restaurant Name</label>
+              <input type="text" id="filterName" placeholder="e.g. Heem Test Bistro, Pizza, Cafe">
+            </div>
+            <div class="form-group">
+              <label for="filterCuisine">Cuisine</label>
+              <input type="text" id="filterCuisine" placeholder="e.g. Indian, Italian, Bakery">
+            </div>
+            <div class="form-group">
+              <label for="filterBorough">Borough</label>
+              <select id="filterBorough">
+                <option value="">-- All Boroughs --</option>
+                <option value="Manhattan">Manhattan</option>
+                <option value="Brooklyn">Brooklyn</option>
+                <option value="Queens">Queens</option>
+                <option value="Bronx">Bronx</option>
+                <option value="Staten Island">Staten Island</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="filterZipcode">ZIP Code</label>
+              <input type="text" id="filterZipcode" placeholder="e.g. 11372, 10001">
+            </div>
+            <div class="form-group">
+              <label for="filterMinScore">Minimum Score</label>
+              <input type="number" id="filterMinScore" min="0" placeholder="e.g. 8">
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="btnSearch">Search Restaurants</button>
+            <button type="button" class="btn btn-secondary" onclick="resetSearch()">Reset Filters</button>
+            <button type="button" class="btn btn-outline" onclick="loadExampleQuery()">Assignment Example (Indian, Queens, Score &ge; 8)</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Results Area -->
+      <div class="card results-card">
+        <div class="results-header">
+          <h3>Search Results <span id="resultsCount" class="count-pill">0</span></h3>
+          <span class="sub-text">Showing up to 50 matching documents from MongoDB</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="restaurantsTable">
+            <thead>
+              <tr>
+                <th>Restaurant ID</th>
+                <th>Name</th>
+                <th>Cuisine</th>
+                <th>Borough</th>
+                <th>Address</th>
+                <th>ZIP</th>
+                <th>Score &amp; Grade</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="restaurantsTableBody">
+              <tr>
+                <td colspan="8" class="text-center">Click "Search Restaurants" to view data.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SECTION 3: ADD RESTAURANT ==================== -->
+    <section id="addSection" class="content-section">
+      <div class="section-header">
+        <h2>Add Restaurant (CRUD Demonstration)</h2>
+        <p class="section-desc">Inserts a new restaurant record into MongoDB Atlas with full server-side validation.</p>
+      </div>
+
+      <div class="card form-card">
+        <div class="quick-preset-bar">
+          <span class="preset-title">Test Record Presets:</span>
+          <button type="button" class="btn btn-sm btn-outline" onclick="fillTestPreset(1)">Load "Heem Test Bistro 01"</button>
+          <button type="button" class="btn btn-sm btn-outline" onclick="fillTestPreset(2)">Load "Heem Test Bistro 02"</button>
+        </div>
+
+        <form id="addRestaurantForm" onsubmit="handleAddRestaurant(event)">
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label for="addName">Restaurant Name <span class="required">*</span></label>
+              <input type="text" id="addName" required placeholder="e.g. Heem Test Bistro 01">
+            </div>
+            <div class="form-group col-3">
+              <label for="addCuisine">Cuisine <span class="required">*</span></label>
+              <input type="text" id="addCuisine" required placeholder="e.g. Indian, Continental">
+            </div>
+            <div class="form-group col-3">
+              <label for="addBorough">Borough <span class="required">*</span></label>
+              <select id="addBorough" required>
+                <option value="Queens">Queens</option>
+                <option value="Manhattan">Manhattan</option>
+                <option value="Brooklyn">Brooklyn</option>
+                <option value="Bronx">Bronx</option>
+                <option value="Staten Island">Staten Island</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-3">
+              <label for="addBuilding">Building / House No</label>
+              <input type="text" id="addBuilding" placeholder="e.g. 108-04">
+            </div>
+            <div class="form-group col-6">
+              <label for="addStreet">Street</label>
+              <input type="text" id="addStreet" placeholder="e.g. Roosevelt Ave">
+            </div>
+            <div class="form-group col-3">
+              <label for="addZipcode">ZIP Code</label>
+              <input type="text" id="addZipcode" placeholder="e.g. 11368">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-4">
+              <label for="addScore">Inspection Score</label>
+              <input type="number" id="addScore" min="0" placeholder="e.g. 10">
+            </div>
+            <div class="form-group col-4">
+              <label for="addGrade">Inspection Grade</label>
+              <select id="addGrade">
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="Not Yet Graded">Not Yet Graded</option>
+              </select>
+            </div>
+            <div class="form-group col-4">
+              <label for="addCustomId">Custom Restaurant ID (Optional)</label>
+              <input type="text" id="addCustomId" placeholder="e.g. HEEM_01 (Auto-generated if empty)">
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="btnSubmitAdd">Add Restaurant</button>
+            <button type="reset" class="btn btn-secondary">Clear Form</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ==================== SECTION 4: ANALYTICS ==================== -->
+    <section id="analyticsSection" class="content-section">
+      <div class="section-header">
+        <h2>Restaurant Analytics &amp; Aggregations</h2>
+        <p class="section-desc">Computed using genuine MongoDB aggregation pipelines ($match, $group, $sort, $unwind, $limit).</p>
+      </div>
+
+      <div class="analytics-tabs">
+        <button class="sub-tab active" data-sub="tabCuisines" onclick="switchAnalyticsTab('tabCuisines')">1. Cuisine Analysis</button>
+        <button class="sub-tab" data-sub="tabBoroughs" onclick="switchAnalyticsTab('tabBoroughs')">2. Borough Analysis</button>
+        <button class="sub-tab" data-sub="tabAvgScore" onclick="switchAnalyticsTab('tabAvgScore')">3. Average Score by Cuisine</button>
+        <button class="sub-tab" data-sub="tabTopRated" onclick="switchAnalyticsTab('tabTopRated')">4. Top-Rated Restaurants</button>
+        <button class="sub-tab" data-sub="tabGrades" onclick="switchAnalyticsTab('tabGrades')">5. Grade Distribution</button>
+      </div>
+
+      <!-- Sub-Tab 1: Cuisine Analysis -->
+      <div id="tabCuisines" class="sub-content active card">
+        <div class="analytics-panel-header">
+          <div>
+            <h3>Restaurants by Cuisine (Top 10)</h3>
+            <p class="pipeline-desc">Pipeline: <code>[ { $match: { cuisine: { $ne: null } } }, { $group: { _id: "$cuisine", count: { $sum: 1 } } }, { $sort: { count: -1 } }, { $limit: 10 } ]</code></p>
+          </div>
+          <button class="btn btn-sm btn-outline" onclick="loadCuisinesAnalytics()">Refresh</button>
+        </div>
+        <div class="analytics-layout">
+          <div class="chart-container" id="cuisinesChart"></div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead><tr><th>Cuisine</th><th>Restaurant Count</th></tr></thead>
+              <tbody id="cuisinesTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-Tab 2: Borough Analysis -->
+      <div id="tabBoroughs" class="sub-content card">
+        <div class="analytics-panel-header">
+          <div>
+            <h3>Restaurants by Borough</h3>
+            <p class="pipeline-desc">Pipeline: <code>[ { $match: { borough: { $nin: [null, "", "Missing"] } } }, { $group: { _id: "$borough", count: { $sum: 1 } } }, { $sort: { count: -1 } } ]</code></p>
+          </div>
+          <button class="btn btn-sm btn-outline" onclick="loadBoroughsAnalytics()">Refresh</button>
+        </div>
+        <div class="analytics-layout">
+          <div class="chart-container" id="boroughsChart"></div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead><tr><th>Borough</th><th>Restaurant Count</th></tr></thead>
+              <tbody id="boroughsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-Tab 3: Average Score -->
+      <div id="tabAvgScore" class="sub-content card">
+        <div class="analytics-panel-header">
+          <div>
+            <h3>Average Inspection Score by Cuisine</h3>
+            <p class="pipeline-desc">Pipeline: <code>[ { $unwind: "$grades" }, { $match: { "grades.score": { $gte: 0 } } }, { $group: { _id: "$cuisine", avgScore: { $avg: "$grades.score" } } }, { $sort: { avgScore: -1 } } ]</code></p>
+          </div>
+          <button class="btn btn-sm btn-outline" onclick="loadAvgScoreAnalytics()">Refresh</button>
+        </div>
+        <div class="analytics-layout">
+          <div class="chart-container" id="avgScoreChart"></div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead><tr><th>Cuisine</th><th>Avg Score</th><th>Evaluated Inspections</th></tr></thead>
+              <tbody id="avgScoreTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-Tab 4: Top Rated -->
+      <div id="tabTopRated" class="sub-content card">
+        <div class="analytics-panel-header">
+          <div>
+            <h3>Top-Rated Restaurants (Score Ranking)</h3>
+            <p class="pipeline-desc">Pipeline: <code>[ { $unwind: "$grades" }, { $group: { _id: "$restaurant_id", avgScore: { $avg: "$grades.score" } } }, { $sort: { avgScore: -1 } }, { $limit: 10 } ]</code></p>
+          </div>
+          <button class="btn btn-sm btn-outline" onclick="loadTopRatedAnalytics()">Refresh</button>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead><tr><th>Rank</th><th>Name</th><th>Cuisine</th><th>Borough</th><th>Avg Score</th><th>Inspection Count</th></tr></thead>
+            <tbody id="topRatedTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sub-Tab 5: Grade Distribution -->
+      <div id="tabGrades" class="sub-content card">
+        <div class="analytics-panel-header">
+          <div>
+            <h3>Grade Distribution</h3>
+            <p class="pipeline-desc">Pipeline: <code>[ { $unwind: "$grades" }, { $match: { "grades.grade": { $in: ["A", "B", "C", ...] } } }, { $group: { _id: "$grades.grade", count: { $sum: 1 } } } ]</code></p>
+          </div>
+          <button class="btn btn-sm btn-outline" onclick="loadGradesAnalytics()">Refresh</button>
+        </div>
+        <div class="analytics-layout">
+          <div class="chart-container" id="gradesChart"></div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead><tr><th>Grade</th><th>Inspection Count</th></tr></thead>
+              <tbody id="gradesTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SECTION 5: DATABASE & INDEXES ==================== -->
+    <section id="databaseSection" class="content-section">
+      <div class="section-header">
+        <h2>Database &amp; Indexes</h2>
+        <p class="section-desc">Manage and view MongoDB Atlas indexes for query performance optimization.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header-flex">
+          <div>
+            <h3>Collection Indexes</h3>
+            <p class="sub-text">Database: <code>sample_restaurants</code> | Collection: <code>restaurants</code></p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="reEnsureIndexes()">Ensure Required Assignment Indexes</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Index Name</th>
+                <th>Keys / Specification</th>
+                <th>Index Type</th>
+                <th>Unique</th>
+              </tr>
+            </thead>
+            <tbody id="indexesTableBody">
+              <tr><td colspan="4" class="text-center">Loading indexes...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="assignment-indexes-note">
+          <h4>Required Assignment Indexes Explained:</h4>
+          <ul>
+            <li><strong>Single Field: <code>name</code></strong> &mdash; Accelerates restaurant name searches and autocomplete.</li>
+            <li><strong>Single Field: <code>cuisine</code></strong> &mdash; Optimizes filtering and grouping by cuisine category.</li>
+            <li><strong>Compound Index: <code>borough_1_cuisine_1</code></strong> &mdash; Combined B-Tree index optimizing simultaneous multi-filter queries on both Borough and Cuisine.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Edit Restaurant Modal -->
+  <div id="editModal" class="modal-backdrop hidden">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Edit Restaurant Record</h3>
+        <button class="modal-close" onclick="closeEditModal()">&times;</button>
+      </div>
+      <form id="editRestaurantForm" onsubmit="handleUpdateRestaurant(event)">
+        <input type="hidden" id="editId">
+        <div class="form-group">
+          <label for="editName">Restaurant Name</label>
+          <input type="text" id="editName" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="editCuisine">Cuisine</label>
+            <input type="text" id="editCuisine" required>
+          </div>
+          <div class="form-group col-6">
+            <label for="editBorough">Borough</label>
+            <select id="editBorough" required>
+              <option value="Manhattan">Manhattan</option>
+              <option value="Brooklyn">Brooklyn</option>
+              <option value="Queens">Queens</option>
+              <option value="Bronx">Bronx</option>
+              <option value="Staten Island">Staten Island</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-4">
+            <label for="editBuilding">Building</label>
+            <input type="text" id="editBuilding">
+          </div>
+          <div class="form-group col-5">
+            <label for="editStreet">Street</label>
+            <input type="text" id="editStreet">
+          </div>
+          <div class="form-group col-3">
+            <label for="editZipcode">ZIP Code</label>
+            <input type="text" id="editZipcode">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="editScore">Score</label>
+            <input type="number" id="editScore" min="0">
+          </div>
+          <div class="form-group col-6">
+            <label for="editGrade">Grade</label>
+            <select id="editGrade">
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="C">C</option>
+              <option value="Not Yet Graded">Not Yet Graded</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="container footer-content">
+      <p>Restaurant Intelligence &amp; Analytics System &bull; ABDA College Project &bull; Scala 3 &bull; MongoDB Atlas</p>
+      <p class="footer-sub">Student: Heem Desai (Enrollment: 23162121003) &bull; Department of Big Data Analytics</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

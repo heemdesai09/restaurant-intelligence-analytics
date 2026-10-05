@@ -1,0 +1,24 @@
+# Scala & sbt build artifacts
+target/
+backend/target/
+project/target/
+project/project/
+backend/project/target/
+backend/project/project/
+.bsp/
+.bloop/
+.metals/
+.scala-build/
+
+# Operating System & IDE files
+.DS_Store
+.idea/
+*.iml
+.vscode/
+*.log
+
+# Sensitive Environment & Credential files
+.env
+.env.*
+!.env.example
+*.local
