@@ -301,12 +301,17 @@ class StaticFileHandler extends HttpHandler {
         val filePath = root.resolve(sanitizedPath.stripPrefix("/")).normalize()
         if (Files.exists(filePath) && !Files.isDirectory(filePath) && filePath.startsWith(root)) {
           val contentType = getContentType(filePath.getFileName.toString)
-          val bytes = Files.readAllBytes(filePath)
           exchange.getResponseHeaders.set("Content-Type", contentType)
-          exchange.sendResponseHeaders(200, bytes.length)
-          val os = exchange.getResponseBody
-          os.write(bytes)
-          os.close()
+          if (exchange.getRequestMethod.equalsIgnoreCase("HEAD")) {
+            exchange.sendResponseHeaders(200, -1)
+            exchange.getResponseBody.close()
+          } else {
+            val bytes = Files.readAllBytes(filePath)
+            exchange.sendResponseHeaders(200, bytes.length)
+            val os = exchange.getResponseBody
+            os.write(bytes)
+            os.close()
+          }
         } else {
           val notFound = "404 Not Found".getBytes(StandardCharsets.UTF_8)
           exchange.sendResponseHeaders(404, notFound.length)
